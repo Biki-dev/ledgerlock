@@ -20,12 +20,12 @@ from database import get_db
 
 from models.invoice import Invoice, InvoiceItem
 
-from schemas.invoice import InvoiceOut
+from schemas.invoice import InvoiceOut , InvoiceRiskOut
 
 from services.pdf_extractor import extract_pdf_text
 from services.invoice_parser import parse_invoice_text
 from services.vendor_service import resolve_vendor
-
+from services.fraud_engine import run_fraud_analysis
 
 router = APIRouter(
     prefix="/api/invoices",
@@ -42,6 +42,67 @@ STORAGE_DIR.mkdir(
 )
 
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024
+
+
+@router.post(
+    "/{invoice_id}/analyze",
+    response_model=InvoiceOut
+)
+def analyze_invoice_endpoint(
+    invoice_id: int,
+    db: Session = Depends(get_db)
+):
+
+    invoice = db.get(Invoice, invoice_id)
+
+    if not invoice:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found"
+        )
+
+    try:
+
+        run_fraud_analysis(db, invoice)
+
+        db.commit()
+
+        db.refresh(invoice)
+
+        return invoice
+
+    except Exception:
+
+        db.rollback()
+
+        raise
+
+
+@router.get(
+    "/{invoice_id}/risk",
+    response_model=InvoiceRiskOut
+)
+def get_invoice_risk(
+    invoice_id: int,
+    db: Session = Depends(get_db)
+):
+
+    invoice = db.get(Invoice, invoice_id)
+
+    if not invoice:
+
+        raise HTTPException(
+            status_code=404,
+            detail="Invoice not found"
+        )
+
+    return {
+        "invoice_id": invoice.id,
+        "risk_status": invoice.risk_status,
+        "risk_score": invoice.risk_score,
+        "findings": invoice.risk_findings
+    }
 
 
 @router.post(
@@ -208,6 +269,15 @@ async def upload_invoice(
 
         # 13. Commit transaction
 
+
+        db.flush()
+
+        # Run Phase 2 fraud analysis.
+
+        run_fraud_analysis(db, invoice)
+
+        # Save invoice + findings together.
+
         db.commit()
 
         db.refresh(invoice)
@@ -221,7 +291,6 @@ async def upload_invoice(
         storage_path.unlink(missing_ok=True)
 
         raise
-
 
 @router.get(
     "",

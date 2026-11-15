@@ -133,6 +133,23 @@ class Invoice(Base):
         back_populates="invoice",
         cascade="all, delete-orphan"
     )
+    
+    risk_status: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default="PENDING"
+    )
+
+    risk_score: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0
+    )
+
+    risk_findings: Mapped[list["RiskFinding"]] = relationship(
+        back_populates="invoice",
+        cascade="all, delete-orphan"
+    )
 
 
 class InvoiceItem(Base):

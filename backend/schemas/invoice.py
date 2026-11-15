@@ -2,7 +2,42 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field
 
+
+class RiskFindingOut(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+    invoice_id: int
+
+    rule_code: str
+
+    severity: str
+
+    action: str
+
+    message: str
+
+    evidence: dict
+
+    created_at: datetime
+
+
+class InvoiceRiskOut(BaseModel):
+
+    invoice_id: int
+
+    risk_status: str
+
+    risk_score: int
+
+    findings: list[RiskFindingOut] = Field(
+        default_factory=list
+    )
 
 class InvoiceItemOut(BaseModel):
 
@@ -18,6 +53,14 @@ class InvoiceItemOut(BaseModel):
 class InvoiceOut(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
+    
+    risk_status: str
+
+    risk_score: int
+
+    risk_findings: list[RiskFindingOut] = Field(
+        default_factory=list
+    )
 
     id: int
     vendor_id: int | None

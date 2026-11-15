@@ -1,15 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import Base, engine
-
 # Import models so SQLAlchemy registers all tables.
-from models import Vendor, Invoice, InvoiceItem
+from models import (
+    Vendor,
+    Invoice,
+    InvoiceItem,
+    RiskFinding
+)
 
 from routes.invoices import router as invoice_router
+from migrate_phase2 import migrate_phase2
 
 
-Base.metadata.create_all(bind=engine)
+migrate_phase2()
 
 
 app = FastAPI(
