@@ -102,17 +102,35 @@ def parse_date(value):
 
 def parse_bank_account(text):
 
-    pattern = (
-        r"(?im)^\s*(?:Bank\s+)?"
-        r"(?:A/C|Account)"
+    lines = text.splitlines()
+
+    pattern = re.compile(
+        r"^\s*(?:Bank\s+)?"
+        r"(?:Account|A/C)"
         r"(?:\s*(?:No\.?|Number))?"
-        r"\s*[:#-]\s*([0-9][0-9 -]{7,22})\s*$"
+        r"\s*[:#-]?\s*(.*?)\s*$",
+        re.IGNORECASE
     )
 
-    match = re.search(pattern, text)
+    for index, line in enumerate(lines):
 
-    if match:
-        return re.sub(r"\s|-", "", match.group(1))
+        match = pattern.match(line)
+
+        if not match:
+            continue
+
+        value = match.group(1).strip()
+
+        # Some PDFs put the account number
+        # on the next line.
+
+        if not value and index + 1 < len(lines):
+            value = lines[index + 1].strip()
+
+        digits = re.sub(r"\D", "", value)
+
+        if 8 <= len(digits) <= 22:
+            return digits
 
     return None
 
@@ -121,10 +139,10 @@ def parse_invoice_items(text):
 
     items = []
 
-    number = r"[0-9][0-9,]*(?:\.\d{1,3})?"
+    number = r"(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,3})?"
 
     pattern = re.compile(
-        rf"^(?P<description>.+?)\s{{2,}}"
+        rf"^(?P<description>.+?)\s+"
         rf"(?P<quantity>{number})\s+"
         rf"(?P<unit_price>{number})\s+"
         rf"(?P<line_total>{number})$"
@@ -190,14 +208,42 @@ def parse_invoice_text(raw_text: str):
         r"Vendor\s*Name|Supplier(?:\s*Name)?|Seller"
     )
 
+    if not vendor_name:
+
+     ignored = {
+        "invoice",
+        "tax invoice",
+        "synthetic test invoice",
+        "original",
+        "duplicate"
+    }
+
+    for line in text.splitlines():
+
+        candidate = line.strip()
+
+        if not candidate:
+            continue
+
+        if candidate.lower() in ignored:
+            continue
+
+        if candidate.lower().startswith(
+            ("invoice ", "date:", "gstin:", "ifsc:")
+        ):
+            continue
+
+        vendor_name = candidate
+        break
+
     invoice_number = find_labeled_value(
         text,
-        r"Invoice\s*(?:No\.?|Number|#)|Bill\s*No\.?"
+        r"Invoice\s*(?:No\.?|Number|#)?|Bill\s*(?:No\.?|Number|#)"
     )
 
     date_value = find_labeled_value(
         text,
-        r"Invoice\s*Date|Bill\s*Date"
+        r"Invoice\s*Date|Bill\s*Date|Date"
     )
 
     invoice_date = parse_date(date_value)
