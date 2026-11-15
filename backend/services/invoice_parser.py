@@ -41,7 +41,7 @@ def parse_decimal(value: str | None):
         return None
 
 
-def find_labeled_value(text, labels):
+def find_labeled_value(text, labels, allow_next_line=False):
 
     pattern = (
         r"(?im)^\s*(?:"
@@ -51,7 +51,26 @@ def find_labeled_value(text, labels):
 
     match = re.search(pattern, text)
 
-    return match.group(1).strip() if match else None
+    if match:
+        return match.group(1).strip()
+
+    if allow_next_line:
+        lines = text.splitlines()
+        label_pattern = re.compile(
+            r"^\s*(?:" + labels + r")\s*[:#-]?\s*$",
+            re.IGNORECASE
+        )
+
+        for index, line in enumerate(lines[:-1]):
+            if not label_pattern.match(line):
+                continue
+
+            value = lines[index + 1].strip()
+
+            if value and not label_pattern.match(value):
+                return value
+
+    return None
 
 
 def find_money(text, labels):
@@ -210,40 +229,42 @@ def parse_invoice_text(raw_text: str):
 
     if not vendor_name:
 
-     ignored = {
-        "invoice",
-        "tax invoice",
-        "synthetic test invoice",
-        "original",
-        "duplicate"
-    }
+        ignored = {
+            "invoice",
+            "tax invoice",
+            "synthetic test invoice",
+            "original",
+            "duplicate"
+        }
 
-    for line in text.splitlines():
+        for line in text.splitlines():
 
-        candidate = line.strip()
+            candidate = line.strip()
 
-        if not candidate:
-            continue
+            if not candidate:
+                continue
 
-        if candidate.lower() in ignored:
-            continue
+            if candidate.lower() in ignored:
+                continue
 
-        if candidate.lower().startswith(
-            ("invoice ", "date:", "gstin:", "ifsc:")
-        ):
-            continue
+            if candidate.lower().startswith(
+                ("invoice ", "date:", "gstin:", "ifsc:")
+            ):
+                continue
 
-        vendor_name = candidate
-        break
+            vendor_name = candidate
+            break
 
     invoice_number = find_labeled_value(
         text,
-        r"Invoice\s*(?:No\.?|Number|#)?|Bill\s*(?:No\.?|Number|#)"
+        r"Invoice\s*(?:No\.?|Number|#)?|Bill\s*(?:No\.?|Number|#)?",
+        allow_next_line=True
     )
 
     date_value = find_labeled_value(
         text,
-        r"Invoice\s*Date|Bill\s*Date|Date"
+        r"Invoice\s*Date|Bill\s*Date|Date",
+        allow_next_line=True
     )
 
     invoice_date = parse_date(date_value)

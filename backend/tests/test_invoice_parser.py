@@ -44,6 +44,22 @@ def test_invoice_number():
     assert result["invoice_number"] == "INV-2026-001"
 
 
+def test_invoice_number_and_date_on_following_lines():
+
+    text = """
+    ABC Industrial Supplies
+    Invoice
+    INV-2026-001
+    Date
+    12/11/2026
+    """
+
+    result = parse_invoice_text(text)
+
+    assert result["invoice_number"] == "INV-2026-001"
+    assert result["invoice_date"].isoformat() == "2026-11-12"
+
+
 def test_bank_extraction():
 
     result = parse_invoice_text(SAMPLE_INVOICE)
