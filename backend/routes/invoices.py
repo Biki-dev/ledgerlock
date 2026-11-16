@@ -54,6 +54,13 @@ def analyze_invoice_endpoint(
 ):
 
     invoice = db.get(Invoice, invoice_id)
+    
+    if invoice.approval_status != "PENDING":
+
+        raise HTTPException(
+            status_code=409,
+            detail="Finalized invoices cannot be re-analyzed."
+        )
 
     if not invoice:
 
@@ -77,7 +84,6 @@ def analyze_invoice_endpoint(
         db.rollback()
 
         raise
-
 
 @router.get(
     "/{invoice_id}/risk",

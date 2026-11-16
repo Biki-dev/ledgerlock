@@ -84,6 +84,37 @@ class InvoiceOut(BaseModel):
     extraction_confidence: float
 
     field_confidence: dict
+    approval_status: str
+
+    review_status: str
+
+    reviewed_by_id: int | None
+
+    reviewed_at: datetime | None
+
+    review_note: str | None
+
+    verification_status: str
+
+    verified_by_id: int | None
+
+    verified_at: datetime | None
+
+    verification_method: str | None
+
+    verification_reference: str | None
+
+    verification_note: str | None
+
+    approved_by_id: int | None
+
+    approved_at: datetime | None
+
+    rejected_by_id: int | None
+
+    rejected_at: datetime | None
+
+    rejection_reason: str | None
 
     extraction_warning: str | None
 

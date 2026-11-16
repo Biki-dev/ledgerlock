@@ -11,9 +11,14 @@ from models import (
 
 from routes.invoices import router as invoice_router
 from migrate_phase2 import migrate_phase2
+from migrate_phase3 import migrate_phase3
 
+from routes.auth import router as auth_router
+
+from routes.approvals import router as approval_router
 
 migrate_phase2()
+migrate_phase3()
 
 
 app = FastAPI(
@@ -43,5 +48,6 @@ def health():
 
     return {"status": "ok"}
 
-
+app.include_router(approval_router)
 app.include_router(invoice_router)
+app.include_router(auth_router)

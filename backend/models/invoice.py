@@ -47,6 +47,99 @@ class Invoice(Base):
         Date,
         nullable=True
     )
+    
+    # Approval lifecycle
+
+    approval_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="PENDING"
+    )
+
+    # REVIEW invoice clearance
+
+    review_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="NOT_REQUIRED"
+    )
+
+    reviewed_by_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    reviewed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    review_note: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+
+    # Independent bank verification
+
+    verification_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="NOT_REQUIRED"
+    )
+
+    verified_by_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    verification_method: Mapped[str | None] = mapped_column(
+        String(60),
+        nullable=True
+    )
+
+    verification_reference: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    verification_note: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+
+    # Approval information
+
+    approved_by_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    approved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    # Rejection information
+
+    rejected_by_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    rejected_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    rejection_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
 
     gstin: Mapped[str | None] = mapped_column(
         String(20),

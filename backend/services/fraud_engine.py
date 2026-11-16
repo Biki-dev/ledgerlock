@@ -136,6 +136,60 @@ def run_fraud_analysis(
     else:
 
         risk_status = "CLEAR"
+        
+        # Do not re-analyze finalized invoices.
+
+    if invoice.approval_status in ("APPROVED", "REJECTED"):
+
+        raise ValueError(
+            "Finalized invoices cannot be re-analyzed."
+        )
+
+    # Reset previous human review when risk analysis is rerun.
+
+    invoice.reviewed_by_id = None
+    invoice.reviewed_at = None
+    invoice.review_note = None
+
+    invoice.verified_by_id = None
+    invoice.verified_at = None
+    invoice.verification_method = None
+    invoice.verification_reference = None
+    invoice.verification_note = None
+
+    # REVIEW workflow initialization.
+
+    invoice.review_status = (
+        "PENDING"
+        if risk_status == "REVIEW"
+        else "NOT_REQUIRED"
+    )
+
+    # Determine whether the only blocking condition
+    # is a changed vendor bank detail.
+
+    hold_codes = {
+        finding["rule_code"]
+        for finding in findings
+        if finding["action"] == "HOLD"
+    }
+
+    if (
+        risk_status == "HOLD"
+        and hold_codes == {"BANK_DETAILS_CHANGED"}
+    ):
+
+        invoice.verification_status = "PENDING"
+
+    else:
+
+        invoice.verification_status = "NOT_REQUIRED"
+
+    invoice.risk_status = risk_status
+
+    invoice.risk_score = risk_score
+
+    db.flush()
 
     # 10. Remove previous findings when re-running analysis.
 

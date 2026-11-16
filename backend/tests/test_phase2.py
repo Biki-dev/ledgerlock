@@ -419,11 +419,13 @@ def test_migration_adds_risk_columns_without_losing_old_invoices(tmp_path):
 
     migrate_phase2(engine)
 
-    with Session(engine) as session:
-        old_invoice = session.get(Invoice, 41)
+    with engine.connect() as connection:
+        old_invoice = connection.exec_driver_sql(
+            """
+            SELECT invoice_number, risk_status, risk_score
+            FROM invoices WHERE id = 41
+            """
+        ).one()
 
-    assert old_invoice is not None
-    assert old_invoice.invoice_number == "LEGACY-041"
-    assert old_invoice.risk_status == "PENDING"
-    assert old_invoice.risk_score == 0
+    assert old_invoice == ("LEGACY-041", "PENDING", 0)
     engine.dispose()
