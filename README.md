@@ -12,27 +12,39 @@ LedgerLock is an invoice-intelligence and accounts-payable security application 
 
 ## Contents
 
-- [Judge's 10-15 Minute Evaluation Guide](#judges-10-15-minute-evaluation-guide)
-- [Problem and Solution](#problem-and-solution)
-- [Architecture and Data Flow](#architecture-and-data-flow)
-- [Features and Repository Layout](#features-and-repository-layout)
-- [Prerequisites and Installation](#prerequisites-and-installation)
-- [Environment Variables and Demo Users](#environment-variables-and-demo-users)
-- [Run the Application](#run-the-application)
-- [Judge Walkthrough](#judge-walkthrough)
-- [Fraud Rules and Limits](#fraud-rules-and-limits)
-- [Authentication and Approval Security](#authentication-and-approval-security)
-- [Testing](#testing)
-- [Kane CLI Integration](#kane-cli-integration)
-- [Coding-Agent Handoff](#coding-agent-handoff)
-- [Closed-Loop Demonstration](#closed-loop-demonstration)
-- [Run History and Evidence](#run-history-and-evidence)
-- [API Reference](#api-reference)
-- [Where to Find Each Implementation](#where-to-find-each-implementation)
-- [How LedgerLock Satisfies the Hackathon Criteria](#how-ledgerlock-satisfies-the-hackathon-criteria)
-- [Troubleshooting](#troubleshooting)
-- [Security and Limitations](#security-and-limitations)
-- [Repository and License Readiness](#repository-and-license-readiness)
+- [LedgerLock](#ledgerlock)
+  - [Contents](#contents)
+  - [Judge's 10-15 Minute Evaluation Guide](#judges-10-15-minute-evaluation-guide)
+  - [Problem and Solution](#problem-and-solution)
+  - [Architecture and Data Flow](#architecture-and-data-flow)
+  - [Features and Repository Layout](#features-and-repository-layout)
+  - [Prerequisites and Installation](#prerequisites-and-installation)
+    - [Fresh installation](#fresh-installation)
+  - [Environment Variables and Demo Users](#environment-variables-and-demo-users)
+  - [Run the Application](#run-the-application)
+  - [Judge Walkthrough](#judge-walkthrough)
+  - [Fraud Rules and Limits](#fraud-rules-and-limits)
+  - [Authentication and Approval Security](#authentication-and-approval-security)
+  - [Testing](#testing)
+  - [Kane CLI Integration](#kane-cli-integration)
+  - [Coding-Agent Handoff](#coding-agent-handoff)
+  - [Closed-Loop Demonstration](#closed-loop-demonstration)
+  - [Run History and Evidence](#run-history-and-evidence)
+  - [API Reference](#api-reference)
+    - [Authentication](#authentication)
+    - [Invoices and risk](#invoices-and-risk)
+    - [Review, approval, and audit](#review-approval-and-audit)
+    - [Kane Assurance](#kane-assurance)
+  - [Where to Find Each Implementation](#where-to-find-each-implementation)
+  - [How LedgerLock Satisfies the Hackathon Criteria](#how-ledgerlock-satisfies-the-hackathon-criteria)
+    - [Criterion 1: SHIPS (25%)](#criterion-1-ships-25)
+    - [Criterion 2: VERIFIED (25%)](#criterion-2-verified-25)
+    - [Criterion 3: CLOSED LOOP (25%)](#criterion-3-closed-loop-25)
+    - [Criterion 4: CRAFT (25%)](#criterion-4-craft-25)
+  - [Troubleshooting](#troubleshooting)
+  - [Security and Limitations](#security-and-limitations)
+  - [Repository and License Readiness](#repository-and-license-readiness)
+  - [Known Release Blockers](#known-release-blockers)
 
 Supporting references: [Architecture](docs/ARCHITECTURE.md) · [Judge Guide](docs/JUDGE_GUIDE.md) · [Kane Integration](docs/KANE_INTEGRATION.md) · [Agent Handoff](docs/AGENT_INTEGRATION.md).
 
@@ -452,12 +464,10 @@ The safe baseline scenario checks a real application policy without weakening it
 4. On a meaningful FAILED run, generate the manual/automatic repair handoff. The coding agent inspects the report/evidence and repairs actual application source; it must not alter the objective or weaken tests.
 5. Run relevant backend tests and `npm run build`.
 6. If a deliberately fault-injected local synthetic invoice was approved, reset only that invoice from the backend directory:
-
-   ```bash
-  .venv/bin/python scripts/reset_demo_invoice.py INVOICE_ID
-   ```
-
-   The reset script requires a `DEMO_` source filename and a sole bank-change HOLD. It resets approval/review/verification workflow fields but retains risk findings and audit history. It refuses non-demo invoices.
+```bash
+.venv/bin/python scripts/reset_demo_invoice.py INVOICE_ID
+```
+The reset script requires a `DEMO_` source filename and a sole bank-change HOLD. It resets approval/review/verification workflow fields but retains risk findings and audit history. It refuses non-demo invoices.
 7. Click **Run same scenario again** on the failed run. Backend validation links the retest to the same failed run, invoice, and scenario. Kane PASS is the evidence of corrected behavior; the agent process status alone is not.
 
 Do **not** disable approval guards in this shared working tree or against business invoices. The repository instructions prohibit weakening the financial approval policy. Any event demo that deliberately injects a fault must use an isolated disposable clone and synthetic `DEMO_` data, must not be committed or deployed, and must restore/inspect the secure diff before submission. No intentionally vulnerable build is included in this repository.
