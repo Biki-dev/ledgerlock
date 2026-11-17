@@ -4,7 +4,7 @@ import {
   UserRound
 } from "lucide-react";
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authContext";
 
 export default function Topbar({
   onMenu

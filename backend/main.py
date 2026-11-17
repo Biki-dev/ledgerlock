@@ -13,18 +13,26 @@ from models import (
 from routes.invoices import router as invoice_router
 from migrate_phase2 import migrate_phase2
 from migrate_phase3 import migrate_phase3
+from migrate_phase5 import migrate_phase5
 from core.demo_credentials import validate_demo_credentials
+from core.config import get_frontend_origins
 from database import SessionLocal
 
 from routes.auth import router as auth_router
 
 from routes.approvals import router as approval_router
 from routes.audit import router as audit_router
+from models.assurance_run import AssuranceRun
+
+from routes.assurance import router as assurance_router
+
+
+FRONTEND_ORIGINS = get_frontend_origins()
 
 
 migrate_phase2()
 migrate_phase3()
-
+migrate_phase5()
 
 app = FastAPI(
     title="LedgerLock API",
@@ -46,9 +54,7 @@ def check_demo_credentials():
 app.add_middleware(
     CORSMiddleware,
 
-    allow_origins=[
-        "http://localhost:5173"
-    ],
+    allow_origins=FRONTEND_ORIGINS,
 
     allow_credentials=True,
 
@@ -67,3 +73,4 @@ app.include_router(approval_router)
 app.include_router(invoice_router)
 app.include_router(auth_router)
 app.include_router(audit_router)
+app.include_router(assurance_router)

@@ -8,7 +8,15 @@ type Status =
   | ApprovalStatus
   | "PENDING"
   | "CLEARED"
-  | "VERIFIED";
+  | "VERIFIED"
+  | "PASSED"
+  | "FAILED"
+  | "RUNNING"
+  | "QUEUED"
+  | "ERROR"
+  | "NOT_STARTED"
+  | "READY"
+  | "COMPLETED";
 
 const styles: Record<string, string> = {
   CLEAR: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -25,7 +33,23 @@ const styles: Record<string, string> = {
 
   CLEARED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
 
-  VERIFIED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+  VERIFIED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+
+  PASSED: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+
+  FAILED: "bg-red-500/10 text-red-400 border-red-500/20",
+
+  RUNNING: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+
+  QUEUED: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+
+  ERROR: "bg-red-500/10 text-red-400 border-red-500/20",
+
+  NOT_STARTED: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+
+  READY: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+
+  COMPLETED: "bg-blue-500/10 text-blue-400 border-blue-500/20"
 };
 
 export default function StatusBadge({

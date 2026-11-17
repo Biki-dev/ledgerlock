@@ -15,7 +15,7 @@ Base.metadata.create_all(bind=engine)
 vendors_data = [
     {
         "name": "ABC Industrial Supplies",
-        "gstin": "DEMO-GSTIN-001",
+        "gstin": "27AAAAA0000A1Z5",
         "bank_account": "900000000001",
         "ifsc": "DEMO0000001",
         "product": "Steel Rod",

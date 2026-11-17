@@ -8,7 +8,8 @@ import {
   ShieldAlert,
   History,
   ShieldCheck,
-  X
+  X,
+  FlaskConical
 } from "lucide-react";
 
 const links = [
@@ -31,6 +32,11 @@ const links = [
     label: "Audit History",
     path: "/audit",
     icon: History
+  },
+  {
+    label: "Kane Assurance Lab",
+    path: "/assurance",
+    icon: FlaskConical
   }
 ];
 
@@ -53,9 +59,8 @@ export default function Sidebar({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800 bg-[#0c1220] transition-transform lg:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-800 bg-[#0c1220] transition-transform lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
 
         <div className="flex h-20 items-center justify-between border-b border-slate-800 px-6">
@@ -95,10 +100,9 @@ export default function Sidebar({
                 to={path}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition ${
-                    isActive
-                      ? "bg-blue-600/15 font-medium text-blue-400"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  `flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition ${isActive
+                    ? "bg-blue-600/15 font-medium text-blue-400"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
                   }`
                 }
               >

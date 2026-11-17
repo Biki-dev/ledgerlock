@@ -32,6 +32,8 @@ export default function InvoiceQueuePage() {
 
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
 
   const [riskFilter, setRiskFilter] = useState("ALL");
@@ -44,6 +46,7 @@ export default function InvoiceQueuePage() {
   async function loadInvoices() {
 
     setLoading(true);
+    setError("");
 
     try {
 
@@ -53,9 +56,9 @@ export default function InvoiceQueuePage() {
 
       setInvoices(data);
 
-    } catch (error) {
+    } catch {
 
-      console.error(error);
+      setError("Unable to load invoices. Check your connection and sign-in.");
 
     } finally {
 
@@ -67,11 +70,13 @@ export default function InvoiceQueuePage() {
 
   useEffect(() => {
 
-    if (params.get("filter") === "risk") {
-      setRiskFilter("RISK");
-    }
+    void Promise.resolve().then(() => {
+      if (params.get("filter") === "risk") {
+        setRiskFilter("RISK");
+      }
 
-    loadInvoices();
+      return loadInvoices();
+    });
 
   }, [params]);
 
@@ -158,6 +163,12 @@ export default function InvoiceQueuePage() {
         </button>
 
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
 
       <div className="grid gap-5 xl:grid-cols-[1fr_320px]">

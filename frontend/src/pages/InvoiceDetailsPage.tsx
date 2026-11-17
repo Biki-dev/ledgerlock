@@ -34,7 +34,7 @@ import {
 
 import {
   useAuth
-} from "../context/AuthContext";
+} from "../context/authContext";
 
 import StatusBadge from "../components/common/StatusBadge";
 
@@ -164,7 +164,7 @@ export default function InvoiceDetailsPage() {
 
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, [loadData]);
 
   useEffect(() => {
@@ -786,7 +786,7 @@ export default function InvoiceDetailsPage() {
                 <div className="space-y-2">
 
                   <button
-                    disabled={busy || !canAttemptApproval}
+                    disabled={busy}
                     onClick={() => performAction(
                       () => api.post(
                         `/api/invoices/${invoice.id}/approve`

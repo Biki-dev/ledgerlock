@@ -131,3 +131,63 @@ export interface GlobalAuditEvent {
   details: Record<string, unknown>;
   created_at: string;
 }
+
+export interface AssuranceScenario {
+  code: string;
+  title: string;
+  description: string;
+  required_risk_status: string;
+}
+
+export interface AssuranceRun {
+  id: number;
+
+  invoice_id: number;
+
+  scenario_code: string;
+
+  scenario_title: string;
+
+  status: "QUEUED" | "RUNNING" | "PASSED" | "FAILED" | "ERROR";
+
+  exit_code: number | null;
+
+  kane_status: string | null;
+
+  summary: string | null;
+
+  reason: string | null;
+
+  duration_seconds: number | null;
+
+  credits_consumed: number | null;
+
+  test_url: string | null;
+
+  session_dir: string | null;
+
+  evidence_path: string | null;
+
+  step_events: {
+    step?: number;
+    status?: string;
+    remark?: string;
+  }[];
+
+  agent_status:
+    | "NOT_STARTED"
+    | "READY"
+    | "RUNNING"
+    | "COMPLETED"
+    | "FAILED";
+
+  agent_feedback_path: string | null;
+
+  retest_of_run_id: number | null;
+
+  created_at: string;
+
+  started_at: string | null;
+
+  completed_at: string | null;
+}

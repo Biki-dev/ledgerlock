@@ -12,7 +12,7 @@ import {
   useNavigate
 } from "react-router-dom";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/authContext";
 
 import { getErrorMessage } from "../utils/format";
 
@@ -23,13 +23,9 @@ export default function LoginPage() {
 
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState(
-    "reviewer@ledgerlock.demo"
-  );
+  const [email, setEmail] = useState("");
 
-  const [password, setPassword] = useState(
-    "Review123!"
-  );
+  const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
 

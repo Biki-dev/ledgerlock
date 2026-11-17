@@ -62,9 +62,7 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-
-    loadInvoices();
-
+    void Promise.resolve().then(loadInvoices);
   }, []);
 
 

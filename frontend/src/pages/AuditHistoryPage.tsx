@@ -49,7 +49,7 @@ export default function AuditHistoryPage() {
   }
 
   useEffect(() => {
-    loadEvents();
+    void Promise.resolve().then(loadEvents);
   }, []);
 
   return (

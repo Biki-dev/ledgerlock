@@ -21,6 +21,7 @@ import InvoiceDetailsPage from "./pages/InvoiceDetailsPage";
 
 import AuditHistoryPage from "./pages/AuditHistoryPage";
 
+import AssuranceLabPage from "./pages/AssuranceLabPage";
 
 function ProtectedLayout({
   children
@@ -96,6 +97,15 @@ export default function App() {
           <Route
             path="*"
             element={<Navigate to="/" replace />}
+          />
+
+          <Route
+            path="/assurance"
+            element={
+              <ProtectedLayout>
+                <AssuranceLabPage />
+              </ProtectedLayout>
+            }
           />
 
         </Routes>

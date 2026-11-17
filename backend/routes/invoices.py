@@ -223,6 +223,11 @@ async def upload_invoice(
 
     # 10. Save PDF
 
+    storage_path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
     storage_path.write_bytes(content)
 
     try:
