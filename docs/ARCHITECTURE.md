@@ -1,71 +1,72 @@
-# LedgerLock Architecture
+# Architecture
 
-This note describes the current implementation; the root [README](../README.md) is the setup and judge entry point.
-
-## Components
+## Data flow
 
 ```mermaid
 flowchart LR
-  Browser[React 19 / TypeScript / Vite / Tailwind]
-  API[FastAPI routers and Pydantic schemas]
-  Auth[JWT and role dependencies]
-  DB[(SQLite / SQLAlchemy)]
-  PDF[PyMuPDF]
-  OCR[Tesseract OCR]
-  Parser[Invoice parser]
-  Vendor[Vendor service]
-  Fraud[Duplicate, bank, price, arithmetic detectors]
-  Approval[Approval eligibility service]
-  Audit[Audit event service]
-  Kane[Kane CLI]
-  Chrome[Chrome]
-  Feedback[Repair Markdown / Codex adapter]
-
-  Browser -->|Bearer JWT| API
-  API --> Auth
-  API --> DB
-  API --> PDF
-  PDF -->|short digital text| OCR
-  PDF --> Parser
-  OCR --> Parser
-  Parser --> Vendor
-  Vendor --> Fraud
-  Fraud --> DB
-  API --> Approval
-  Approval --> Audit
-  API --> Audit
-  Audit --> DB
-  Browser --> API
-  API --> Kane
-  Kane --> Chrome
-  Kane --> DB
-  Kane --> Feedback
-  Feedback --> Browser
+  UI[React / TypeScript] -->|JWT + PDF| API[FastAPI]
+  API --> AUTH[JWT / role checks]
+  API --> PDF[PyMuPDF]
+  PDF --> OCR[Tesseract fallback]
+  PDF --> PARSER[Invoice parser]
+  OCR --> PARSER
+  PARSER --> VENDOR[Vendor matching]
+  VENDOR --> FRAUD[Fraud detectors]
+  FRAUD --> DB[(SQLite / SQLAlchemy)]
+  API --> APPROVAL[Approval service]
+  APPROVAL --> AUDIT[Audit service]
+  AUDIT --> DB
+  UI --> API
+  API --> KANE[Kane CLI]
+  KANE --> CHROME[Chrome]
+  KANE --> RUNS[Assurance run / evidence]
+  RUNS --> HANDOFF[Repair Markdown]
+  HANDOFF --> AGENT[Codex or manual agent]
+  AGENT --> UI
 ```
 
-## Request and Persistence Boundaries
+## Main implementation files
 
-- `backend/main.py` registers routers and runs Phase 2, Phase 3, and Phase 5 schema creation/migrations before serving. SQLite lives at `backend/ledgerlock.db`.
-- `backend/routes/invoices.py` validates PDF name, signature, and size; extracts/parses; resolves the vendor; stores the original PDF under `backend/storage/invoices/`; persists the invoice/items; and runs fraud analysis before commit. Invoice API schemas omit `raw_text`; the source route requires finance-role JWT.
-- `backend/services/fraud_engine.py` aggregates findings, calculates a capped heuristic score, sets risk state, resets previous findings on reanalysis, and persists the new set.
-- `backend/routes/approvals.py` is the authorization/transaction boundary for reviewer, verifier, approver, rejection, and per-invoice audit actions. `backend/services/approval_service.py` independently checks approval eligibility; front-end controls do not replace these checks.
-- `backend/routes/audit.py` returns global read-only history; no audit update/delete routes are registered.
-- `backend/routes/assurance.py` validates scenario prerequisites and retest links. `backend/services/kane_execution.py` launches `kane-cli`, parses Agent-mode NDJSON, stores outcomes, and only records evidence paths when an actual `.evidence` file exists.
-- `scripts/repair_from_kane.py` consumes a persisted FAILED run. It generates an agent-neutral Markdown report and optionally invokes Codex CLI. Other agents are manual handoffs; see [agent workflow](AGENT_INTEGRATION.md).
+| Area | Files |
+|---|---|
+| App/router startup | `backend/main.py` |
+| Auth and roles | `backend/core/` |
+| API routes | `backend/routes/auth.py`, `invoices.py`, `approvals.py`, `audit.py`, `assurance.py` |
+| Schemas | `backend/schemas/` |
+| Database models | `backend/models/` |
+| PDF extraction/OCR | `backend/services/pdf_extractor.py` |
+| Invoice parsing | `backend/services/invoice_parser.py` |
+| Vendor matching | `backend/services/vendor_service.py` |
+| Fraud rules | `backend/services/duplicate_detector.py`, `bank_detector.py`, `price_detector.py`, `arithmetic_detector.py`, `fraud_engine.py` |
+| Approval policy | `backend/services/approval_service.py` |
+| Audit | `backend/services/audit_service.py` |
+| Kane execution/parsing | `backend/services/kane_runner.py`, `kane_execution.py`, `kane_parser.py` |
+| Agent handoff | `scripts/repair_from_kane.py` |
+| Frontend | `frontend/src/pages/`, `frontend/src/components/`, `frontend/src/services/api.ts` |
 
-## Risk Decision Semantics
+## Request boundaries
 
-The score sums severity weights (CRITICAL 100, HIGH 75, MEDIUM 35, LOW 10) and caps at 100; it is a heuristic, not a probability. Any HOLD action wins status aggregation; otherwise any finding produces REVIEW; no findings produces CLEAR. Extraction completeness is included in the finding set.
+- `POST /api/invoices/upload`: validate PDF extension/signature/size, extract text or OCR, parse fields/items, match vendor, run fraud analysis, persist invoice and PDF.
+- `backend/services/fraud_engine.py`: aggregate findings, calculate capped heuristic score, set `CLEAR` / `REVIEW` / `HOLD`.
+- `backend/routes/approvals.py` + `approval_service.py`: enforce reviewer, bank verification, approver, and rejection rules on the server.
+- `backend/routes/audit.py`: read-only audit history.
+- `backend/routes/assurance.py`: validate Kane scenario inputs and linked retest.
+- `backend/services/kane_execution.py`: launch Kane, parse NDJSON, store result and only store evidence path when an actual `.evidence` file exists.
 
-The supported bank exception requires exactly one finding and that finding must be `BANK_DETAILS_CHANGED`; the invoice must have completed independent verification by someone other than the approver. A duplicate or additional finding cannot use this exception. A REVIEW invoice must have reviewer clearance, no HOLD finding, a reviewer timestamp, and no new finding created after that clearance; the reviewer and approver must differ.
+## Policy rules
 
-## Storage and Trust
+- Any `HOLD` finding makes the invoice `HOLD`; otherwise findings mean `REVIEW`; no findings means `CLEAR`.
+- A `REVIEW` invoice needs reviewer clearance; reviewer and approver must differ.
+- Bank exception requires exactly one `BANK_DETAILS_CHANGED` finding and independent verification by someone other than the approver.
+- Duplicate or mixed HOLD findings cannot use the bank exception.
+- Approval checks are backend-enforced; blocked attempts are audited.
+- Audit APIs have no update/delete routes.
 
-- SQLite, uploaded PDFs, `.env`, generated PDFs, Kane evidence, and agent feedback are local runtime data and ignored by Git.
-- Seed data is synthetic; it does not connect to a bank or initiate payments.
-- Vendor bank details are established in the trusted vendor profile and are not overwritten from uploaded invoice fields.
-- Migrations are idempotent additive scripts for the existing SQLite schema. They are not a general migration framework such as Alembic.
+## Runtime data
 
-## Known Boundaries
+- SQLite: `backend/ledgerlock.db`
+- Uploaded PDFs: `backend/storage/invoices/`
+- Environment: `backend/.env`
+- Generated Kane evidence and agent feedback: local runtime artifacts
 
-The invoice listing endpoint returns at most 100 records; dashboard aggregates are based on that response. Fraud detectors use the current local invoice history, not a calibrated model. The frontend and backend were developed/tested on Linux; the browser smoke is performed by Kane CLI using local Chrome. Production deployment needs additional storage, secret-management, privacy, access-control, backup, concurrency, and operational hardening.
+These are local data and should not be committed. Demo seed records are synthetic.

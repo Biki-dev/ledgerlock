@@ -1,33 +1,64 @@
 # Judge Guide
 
-Start with the [root README](../README.md) for fresh install, environment setup, API reference, all four judging criteria, and troubleshooting. This page is a short execution card.
+## Start the app
 
-## Local application
+Follow the root [README setup](../README.md), configure `backend/.env`, then start:
 
-1. Install Python 3.13, Node.js 20/npm, and Tesseract. Install Kane CLI separately only if evaluating browser assurance.
-2. Clone and configure secrets as shown in the root README. Seed with `python seed_demo.py` and `python seed_users.py` from `backend/`.
-3. Run backend in one terminal (`uvicorn main:app --reload`) and frontend in another (`npm run dev`). Open <http://localhost:5173/>.
-4. Log in using the reviewer account and its locally generated password.
-5. Generate sample test PDFs: `python tests/create_test_invoices.py` from `backend/`.
-6. Upload normal, bank-change, and price-inflated invoices. Inspect detail-page extraction, findings, risk state, line items, PDF preview, and audit history.
-7. Log in separately as the approver; attempt approval before review/verification and inspect the backend's 409 response plus BLOCKED audit event.
+```bash
+# Terminal 1
+cd backend
+source .venv/bin/activate
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
 
-## Kane browser verification
+# Terminal 2
+cd frontend
+npm run dev -- --host 127.0.0.1
+```
 
-1. Register/authenticate with TestMu and ensure credits; `kane-cli login --oauth`, `kane-cli whoami`, `kane-cli balance`.
-2. Ensure `KANE_BASE_URL` points to the local frontend and `DEMO_APPROVER_PASSWORD` matches the seeded account.
-3. Open `/assurance`, pick a scenario-compatible pending invoice, start Kane, then inspect steps, `run_end` verdict, Test Manager URL, and evidence file path when returned.
-4. A single smoke run verifies only the tested login-page conditions. It is not evidence for approval, upload, or fraud behavior.
+Open http://127.0.0.1:5173/.
 
-## Closed loop
+## Generate demo PDFs
 
-For an actual FAILED run, create the prompt with `backend/.venv/bin/python scripts/repair_from_kane.py RUN_ID --manual` from repository root. Provide `artifacts/agent-feedback/repair_run_RUN_ID.md` to the coding agent. Review the diff, run backend tests and frontend build, then use **Run same scenario again**. The second run must link to the original and PASS in Kane. Do not fault-inject in the shared repository or use non-demo invoices; any controlled fault experiment must remain in an isolated disposable clone and never be committed.
+```bash
+cd backend
+python tests/create_test_invoices.py
+```
+
+Generated files are in `backend/tests/generated/`.
+
+## Core workflow
+
+1. Sign in as `reviewer@ledgerlock.demo` with the local password.
+2. Upload `normal.pdf`; inspect extracted data, line items, risk, PDF preview.
+3. Upload `bank_changed.pdf`; confirm bank-change `HOLD` finding.
+4. As reviewer, record bank verification. Sign out and sign in as `approver@ledgerlock.demo`; approve the verified invoice.
+5. Upload `price_inflated.pdf`; inspect the price-history `REVIEW` finding.
+6. Upload `normal.pdf` twice with identical bytes; the second upload should show `EXACT_FILE_DUPLICATE` / `HOLD`.
+7. Inspect invoice audit and global audit.
+
+## Kane browser scenario
+
+```bash
+kane-cli --version
+kane-cli login --oauth
+kane-cli whoami
+kane-cli balance
+```
+
+Set `KANE_BASE_URL=http://localhost:5173` and ensure `DEMO_APPROVER_PASSWORD` matches the seeded approver account. Open `/assurance`, select a compatible pending invoice, and run a scenario.
+
+For `bank_change_approval_guard`, use an invoice whose bank verification is still `PENDING`. Do not run the scenario after completing bank verification.
 
 ## Evidence to inspect
 
-- API behavior and risk findings: `/docs`, `/api/invoices/{id}`, `/api/invoices/{id}/risk`.
-- Human actions: `/api/invoices/{id}/audit` and `/api/audit`.
-- Kane: `/api/assurance/runs`, `/api/assurance/runs/{id}`, Assurance Lab run history.
-- Browser evidence: exact `*.evidence` path from the run, opened with `kane-cli evidence serve PATH.evidence`.
+| What | Location |
+|---|---|
+| API schemas | `/docs` |
+| Invoice details/risk | `/api/invoices/{id}`, `/api/invoices/{id}/risk` |
+| Audit | `/api/invoices/{id}/audit`, `/api/audit` |
+| Kane runs | `/api/assurance/runs`, `/api/assurance/runs/{id}` |
+| Browser evidence | Exact `.evidence` path returned by the run |
 
-A local browser smoke was run on 2026-11-17: Kane CLI 0.10.5 with Chrome checked the login brand and fields, did not submit credentials, and returned PASS. Full approval scenario testing remains blocked until valid demo passwords are configured and the backend is started.
+```bash
+kane-cli evidence serve "/absolute/path/to/run.evidence"
+```
