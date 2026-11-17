@@ -15,33 +15,38 @@ DEMO_USERS = [
     {
         "full_name": "Finance Reviewer",
         "email": "reviewer@ledgerlock.demo",
-        "password": os.getenv(
-            "DEMO_REVIEWER_PASSWORD",
-            "Review123!"
-        ),
+        "password": os.getenv("DEMO_REVIEWER_PASSWORD"),
         "role": "FINANCE_REVIEWER"
     },
 
     {
         "full_name": "Finance Approver",
         "email": "approver@ledgerlock.demo",
-        "password": os.getenv(
-            "DEMO_APPROVER_PASSWORD",
-            "Approve123!"
-        ),
+        "password": os.getenv("DEMO_APPROVER_PASSWORD"),
         "role": "FINANCE_APPROVER"
     },
 
     {
         "full_name": "System Administrator",
         "email": "admin@ledgerlock.demo",
-        "password": os.getenv(
-            "DEMO_ADMIN_PASSWORD",
-            "Admin123!"
-        ),
+        "password": os.getenv("DEMO_ADMIN_PASSWORD"),
         "role": "ADMIN"
     }
 ]
+
+
+for data in DEMO_USERS:
+
+    password = data["password"]
+
+    if not password or len(password) < 16:
+        raise RuntimeError(
+            f"Set {data['role']} demo password in the environment "
+            "to a unique value of at least 16 characters."
+        )
+
+if len({data["password"] for data in DEMO_USERS}) != len(DEMO_USERS):
+    raise RuntimeError("Each demo role must use a different password.")
 
 
 db = SessionLocal()
@@ -55,7 +60,10 @@ try:
         ).first()
 
         if existing:
-            print("Already exists:", data["email"])
+            existing.password_hash = hash_password(data["password"])
+            existing.role = data["role"]
+            existing.is_active = True
+            print("Updated credentials:", data["email"])
             continue
 
         user = User(

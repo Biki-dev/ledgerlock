@@ -20,9 +20,9 @@ TOKEN_EXPIRE_MINUTES = int(
     os.getenv("JWT_EXPIRE_MINUTES", "60")
 )
 
-if not SECRET_KEY:
+if not SECRET_KEY or len(SECRET_KEY) < 32:
     raise RuntimeError(
-        "JWT_SECRET_KEY missing from .env"
+        "JWT_SECRET_KEY must be configured with at least 32 characters."
     )
 
 password_hasher = PasswordHash.recommended()

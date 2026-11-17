@@ -19,8 +19,11 @@ from sqlalchemy import select
 from database import get_db
 
 from models.invoice import Invoice, InvoiceItem
+from models.user import User
 
 from schemas.invoice import InvoiceOut , InvoiceRiskOut
+
+from core.dependencies import require_roles
 
 from services.pdf_extractor import extract_pdf_text
 from services.invoice_parser import parse_invoice_text
@@ -50,23 +53,26 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 )
 def analyze_invoice_endpoint(
     invoice_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles("FINANCE_REVIEWER", "ADMIN")
+    )
 ):
 
     invoice = db.get(Invoice, invoice_id)
-    
-    if invoice.approval_status != "PENDING":
-
-        raise HTTPException(
-            status_code=409,
-            detail="Finalized invoices cannot be re-analyzed."
-        )
 
     if not invoice:
 
         raise HTTPException(
             status_code=404,
             detail="Invoice not found"
+        )
+
+    if invoice.approval_status != "PENDING":
+
+        raise HTTPException(
+            status_code=409,
+            detail="Finalized invoices cannot be re-analyzed."
         )
 
     try:
@@ -91,7 +97,14 @@ def analyze_invoice_endpoint(
 )
 def get_invoice_risk(
     invoice_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles(
+            "FINANCE_REVIEWER",
+            "FINANCE_APPROVER",
+            "ADMIN"
+        )
+    )
 ):
 
     invoice = db.get(Invoice, invoice_id)
@@ -118,7 +131,14 @@ def get_invoice_risk(
 )
 async def upload_invoice(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles(
+            "FINANCE_REVIEWER",
+            "FINANCE_APPROVER",
+            "ADMIN"
+        )
+    )
 ):
 
     # 1. Extension validation
@@ -303,7 +323,14 @@ async def upload_invoice(
     response_model=list[InvoiceOut]
 )
 def get_invoices(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles(
+            "FINANCE_REVIEWER",
+            "FINANCE_APPROVER",
+            "ADMIN"
+        )
+    )
 ):
 
     invoices = db.scalars(
@@ -321,7 +348,14 @@ def get_invoices(
 )
 def get_invoice(
     invoice_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles(
+            "FINANCE_REVIEWER",
+            "FINANCE_APPROVER",
+            "ADMIN"
+        )
+    )
 ):
 
     invoice = db.get(Invoice, invoice_id)
@@ -339,7 +373,14 @@ def get_invoice(
 @router.get("/{invoice_id}/source")
 def download_invoice(
     invoice_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles(
+            "FINANCE_REVIEWER",
+            "FINANCE_APPROVER",
+            "ADMIN"
+        )
+    )
 ):
 
     invoice = db.get(Invoice, invoice_id)
